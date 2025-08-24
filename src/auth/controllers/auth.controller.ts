@@ -159,7 +159,7 @@ export class AuthController {
 
     } catch (error) {
       this.logger.error('Logout failed', error as Error, {
-        userId: req.user?._id,
+        userId: req.user?._id.toString(),
         ip: req.ip
       });
 
@@ -184,7 +184,7 @@ export class AuthController {
 
       if (!user) {
         this.logger.logSecurity('CURRENT_USER_NOT_FOUND', {
-          userId: req.user._id,
+          userId: req.user._id.toString(),
           ip: req.ip
         });
 
@@ -201,7 +201,7 @@ export class AuthController {
 
     } catch (error) {
       this.logger.error('Get current user failed', error as Error, {
-        userId: req.user?._id,
+        userId: req.user?._id.toString(),
         ip: req.ip
       });
 
@@ -271,7 +271,7 @@ export class AuthController {
 
     } catch (error) {
       this.logger.error('Profile update failed', error as Error, {
-        userId: req.user?._id,
+        userId: req.user?._id.toString(),
         ip: req.ip
       });
 
@@ -333,7 +333,7 @@ export class AuthController {
 
     } catch (error) {
       this.logger.error('Token refresh failed', error as Error, {
-        userId: req.user?._id,
+        userId: req.user?._id.toString(),
         ip: req.ip
       });
 

@@ -1,11 +1,18 @@
 import { Request, Response } from 'express';
 import User from '../../models/user.model';
-import asyncHandler from '../../utils/async-handler';
-import logger from '../../utils/logger';
+import { asyncHandler } from '../../utils/async-handler';
+import { logger } from '../../utils/logger';
 
 export default class PasswordController {
   static changePassword = asyncHandler(async (req: Request, res: Response) => {
-    const user = await User.findById(req.user.id).select('+password');
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Not authenticated'
+      });
+    }
+
+    const user = await User.findById(req.user._id).select('+password');
     if (!user) throw new Error('User not found');
 
     const { currentPassword, newPassword } = req.body;
@@ -17,7 +24,7 @@ export default class PasswordController {
     user.password = newPassword;
     await user.save();
 
-    logger.info(`Password changed for user: ${user.id}`);
+    logger.info(`Password changed for user: ${user._id.toString()}`);
     
     res.status(200).json({
       success: true,
@@ -35,7 +42,7 @@ export default class PasswordController {
     user.password = newPassword;
     await user.save();
 
-    logger.warn(`Force password change for user: ${user.id}`);
+    logger.warn(`Force password change for user: ${user._id.toString()}`);
     
     res.status(200).json({
       success: true,

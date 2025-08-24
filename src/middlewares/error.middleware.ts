@@ -84,7 +84,7 @@ export class ErrorHandler {
       url: req.originalUrl,
       ip: this.securityUtils.getClientIP(req),
       userAgent: req.get('User-Agent'),
-      userId: req.user?._id,
+      userId: req.user?._id.toString(),
       body: this.sanitizeRequestBody(req.body),
       query: req.query,
       params: req.params

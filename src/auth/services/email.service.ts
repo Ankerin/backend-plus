@@ -1,14 +1,17 @@
 import fs from 'fs';
 import path from 'path';
 import nodemailer from 'nodemailer';
-import emailConfig from '../../config/email.config';
-import logger from '../../utils/logger';
+import { EmailConfig } from '../../config/email.config';
+import { logger } from '../../utils/logger';
 
 class EmailService {
   private transporter: nodemailer.Transporter;
   private resetTemplate: string;
+  private emailConfig: EmailConfig;
 
   constructor() {
+    this.emailConfig = EmailConfig.getInstance(); // Предполагаем, что EmailConfig также singleton
+    
     const templatePath = path.join(__dirname, '../../../src/templates/passwordReset.html');
     try {
       this.resetTemplate = fs.readFileSync(templatePath, 'utf-8');
@@ -17,13 +20,13 @@ class EmailService {
       this.resetTemplate = '';
     }
 
-    this.transporter = nodemailer.createTransport({
-      host: emailConfig.host,
-      port: emailConfig.port,
-      secure: emailConfig.secure,
+    this.transporter = nodemailer.createTransporter({
+      host: this.emailConfig.getHost(),
+      port: this.emailConfig.getPort(),
+      secure: this.emailConfig.isSecure(),
       auth: {
-        user: emailConfig.auth.user,
-        pass: emailConfig.auth.pass,
+        user: this.emailConfig.getAuthUser(),
+        pass: this.emailConfig.getAuthPass(),
       },
     });
 
@@ -43,7 +46,7 @@ class EmailService {
    */
   async sendPasswordResetCode(to: string, code: string): Promise<void> {
     // Безопасная работа с шаблонами
-    const template = emailConfig.templates?.passwordReset;
+    const template = this.emailConfig.getPasswordResetTemplate();
     const subject = template?.subject ?? 'Password Reset';
     const htmlContent = template
       ? this.resetTemplate.replace(/\$\{code\}/g, code)
@@ -51,7 +54,7 @@ class EmailService {
 
     try {
       await this.transporter.sendMail({
-        from: emailConfig.from,
+        from: this.emailConfig.getFrom(),
         to,
         subject,
         html: htmlContent,

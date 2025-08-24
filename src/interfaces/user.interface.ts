@@ -6,6 +6,7 @@ export interface IUser extends Document {
   password: string;
   nickname: string;
   isVerified: boolean;
+  role?: 'user' | 'admin' | 'moderator';
   backupCodes: string[];
   lastPasswordChange: Date;
   createdAt: Date;

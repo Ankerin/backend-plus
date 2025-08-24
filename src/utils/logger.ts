@@ -80,7 +80,7 @@ export class Logger {
           timestamp,
           level: level.toUpperCase(),
           message,
-          ...(stack && { stack }),
+          ...(stack ? { stack } : {}),
           ...(Object.keys(meta).length > 0 && { meta })
         };
         return JSON.stringify(logObject);

@@ -196,7 +196,7 @@ export class AuthService {
   public generateToken(payload: Omit<AuthTokenPayload, 'iat' | 'exp'>): string {
     try {
       const options: SignOptions = {
-        expiresIn: this.authConfig.getJwtExpiresIn(),
+        expiresIn: this.authConfig.getJwtExpiresIn() as jwt.SignOptions['expiresIn'],
         issuer: this.authConfig.getJwtIssuer(),
         audience: this.authConfig.getJwtAudience()
       };

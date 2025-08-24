@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
-import asyncHandler from '../../utils/async-handler';
+import { asyncHandler } from '../../utils/async-handler';
 import User from '../../models/user.model';
 import RecoveryService from '../services/recovery.service';
-import logger from '../../utils/logger';
+import { logger } from '../../utils/logger';
 
 export default class RecoveryController {
   static initPasswordReset = asyncHandler(async (req: Request, res: Response) => {

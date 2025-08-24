@@ -1,7 +1,7 @@
 import RecoveryCode from '../../models/recovery-code.model';
 import User from '../../models/user.model';
 import emailService from './email.service';
-import logger from '../../utils/logger';
+import { logger } from '../../utils/logger';
 import { randomBytes, createHash } from 'crypto';
 
 export default class RecoveryService {
