@@ -7,6 +7,7 @@ import mongoSanitize from 'express-mongo-sanitize';
 import cookieParser from 'cookie-parser';
 import compression from 'compression';
 import morgan from 'morgan';
+import { Server } from 'http';
 
 import { Logger } from './utils/logger';
 import { SecurityConfig } from './config/security.config';
@@ -209,7 +210,7 @@ export class App {
         this.setupGracefulShutdown(server);
       });
     } catch (error) {
-      this.logger.error('Server startup failed:', error);
+      this.logger.error('Server startup failed:', error as Error);
       throw error;
     }
   }
@@ -217,14 +218,14 @@ export class App {
   /**
    * Настройка graceful shutdown
    */
-  private setupGracefulShutdown(server: any): void {
+  private setupGracefulShutdown(server: Server): void {
     const signals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
     
     signals.forEach(signal => {
       process.on(signal, () => {
         this.logger.info(`Received ${signal}, shutting down gracefully...`);
         
-        server.close((err: Error) => {
+        server.close((err?: Error) => {
           if (err) {
             this.logger.error('Error during server shutdown:', err);
             process.exit(1);

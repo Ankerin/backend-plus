@@ -93,6 +93,9 @@ export class DatabaseConnection {
    */
   public async healthCheck(): Promise<{ status: string; details: any }> {
     try {
+      if (!mongoose.connection.db) {
+        throw new Error('MongoDB database connection is not established');
+      }
       const adminDb = mongoose.connection.db.admin();
       const result = await adminDb.ping();
       
@@ -139,6 +142,9 @@ export class DatabaseConnection {
         throw new Error('Database not connected');
       }
 
+      if (!mongoose.connection.db) {
+        throw new Error('MongoDB database connection is not established');
+      }
       const adminDb = mongoose.connection.db.admin();
       const dbStats = await mongoose.connection.db.stats();
       const serverStatus = await adminDb.serverStatus();

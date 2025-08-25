@@ -1,4 +1,4 @@
-import { Schema, model, CallbackError } from 'mongoose';
+import { Schema, model, CallbackError, Document, Model } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { AuthConfig } from '../config/auth.config';
 import { SecurityUtils } from '../utils/security';
@@ -35,7 +35,7 @@ const userSchema = new Schema<IUser, UserModel>({
     maxlength: [128, 'Password is too long'],
     select: false,
     validate: {
-      validator: function(password: string): boolean {
+      validator: function(this: IUser, password: string): boolean {
         // Проверяем силу пароля только при создании или изменении
         if (this.isModified('password')) {
           return securityUtils.validatePasswordStrength(password);
@@ -63,13 +63,6 @@ const userSchema = new Schema<IUser, UserModel>({
   isVerified: {
     type: Boolean,
     default: false,
-    index: true
-  },
-  
-  role: {
-    type: String,
-    enum: ['user', 'admin', 'moderator'],
-    default: 'user',
     index: true
   },
   
@@ -114,19 +107,19 @@ const userSchema = new Schema<IUser, UserModel>({
   versionKey: false,
   toJSON: {
     transform: function(doc, ret) {
-      ret.id = ret._id;
-      delete ret._id;
-      delete ret.password;
-      delete ret.backupCodes;
-      delete ret.failedLoginAttempts;
+      ret.id = ret._id.toString();
+      ret._id;
+      ret.password;
+      ret.backupCodes;
+      ret.failedLoginAttempts;
       delete ret.lockUntil;
       return ret;
     }
   },
   toObject: {
     transform: function(doc, ret) {
-      ret.id = ret._id;
-      delete ret._id;
+      ret.id = ret._id.toString();
+      ret._id;
       return ret;
     }
   }
@@ -153,14 +146,14 @@ userSchema.pre<IUser>('save', async function(next) {
     this.lastPasswordChange = new Date();
     
     logger.debug('Password hashed for user', {
-      userId: this._id,
+      userId: this._id.toString(),
       email: this.email
     });
     
     next();
   } catch (error) {
     logger.error('Error hashing password', error as Error, {
-      userId: this._id,
+      userId: this._id?.toString(),
       email: this.email
     });
     next(error as CallbackError);
@@ -193,14 +186,13 @@ userSchema.post<IUser>('save', function(doc) {
   if (this.isNew) {
     logger.logAuth('USER_CREATED', doc._id.toString(), {
       email: doc.email,
-      nickname: doc.nickname,
-      role: doc.role
+      nickname: doc.nickname
     });
   }
 });
 
 // Методы экземпляра
-userSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
+userSchema.methods.comparePassword = async function(this: IUser, candidatePassword: string): Promise<boolean> {
   try {
     if (!this.password) {
       throw new Error('Password not loaded');
@@ -209,17 +201,17 @@ userSchema.methods.comparePassword = async function(candidatePassword: string): 
     return await bcrypt.compare(candidatePassword, this.password);
   } catch (error) {
     logger.error('Password comparison error', error as Error, {
-      userId: this._id
+      userId: this._id.toString()
     });
     return false;
   }
 };
 
-userSchema.methods.isPasswordValid = function(password: string): boolean {
+userSchema.methods.isPasswordValid = function(this: IUser, password: string): boolean {
   return securityUtils.validatePasswordStrength(password);
 };
 
-userSchema.methods.incrementLoginAttempts = async function(): Promise<void> {
+userSchema.methods.incrementLoginAttempts = async function(this: IUser): Promise<void> {
   // Если аккаунт заблокирован и время блокировки прошло
   if (this.lockUntil && this.lockUntil < new Date()) {
     await this.updateOne({
@@ -237,7 +229,7 @@ userSchema.methods.incrementLoginAttempts = async function(): Promise<void> {
   const updates: any = { $inc: { failedLoginAttempts: 1 } };
   
   // Если достигли максимума попыток и аккаунт не заблокирован
-  if (this.failedLoginAttempts + 1 >= MAX_LOGIN_ATTEMPTS && !this.isLocked) {
+  if (this.failedLoginAttempts + 1 >= MAX_LOGIN_ATTEMPTS && !this.isAccountLocked()) {
     updates.$set = {
       accountLocked: true,
       lockUntil: new Date(Date.now() + LOCK_TIME)
@@ -253,7 +245,7 @@ userSchema.methods.incrementLoginAttempts = async function(): Promise<void> {
   await this.updateOne(updates);
 };
 
-userSchema.methods.resetLoginAttempts = async function(): Promise<void> {
+userSchema.methods.resetLoginAttempts = async function(this: IUser): Promise<void> {
   const updates: any = {
     $unset: {
       failedLoginAttempts: 1,
@@ -273,24 +265,24 @@ userSchema.methods.resetLoginAttempts = async function(): Promise<void> {
   });
 };
 
-userSchema.methods.isAccountLocked = function(): boolean {
+userSchema.methods.isAccountLocked = function(this: IUser): boolean {
   return !!(this.lockUntil && this.lockUntil > new Date());
 };
 
 // Статические методы
-userSchema.statics.isEmailTaken = async function(email: string): Promise<boolean> {
+userSchema.statics.isEmailTaken = async function(this: UserModel, email: string): Promise<boolean> {
   const normalizedEmail = email.toLowerCase().trim();
   const user = await this.findOne({ email: normalizedEmail }).exec();
   return !!user;
 };
 
-userSchema.statics.isNicknameTaken = async function(nickname: string): Promise<boolean> {
+userSchema.statics.isNicknameTaken = async function(this: UserModel, nickname: string): Promise<boolean> {
   const normalizedNickname = nickname.trim();
   const user = await this.findOne({ nickname: normalizedNickname }).exec();
   return !!user;
 };
 
-userSchema.statics.findByCredentials = async function(email: string, password: string): Promise<IUser | null> {
+userSchema.statics.findByCredentials = async function(this: UserModel, email: string, password: string): Promise<IUser | null> {
   try {
     const normalizedEmail = email.toLowerCase().trim();
     
@@ -345,7 +337,7 @@ userSchema.post('save', function(error: any, doc: any, next: any) {
 });
 
 // Middleware для логирования удаления пользователей
-userSchema.pre('deleteOne', { document: true }, function() {
+userSchema.pre('deleteOne', { document: true }, function(this: IUser) {
   logger.logAuth('USER_DELETED', this._id.toString(), {
     email: this.email,
     nickname: this.nickname
