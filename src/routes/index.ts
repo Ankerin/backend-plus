@@ -1,12 +1,6 @@
 import { Router } from 'express';
 import { authController } from '../api/auth/controllers/auth.controller';
 import recoveryRouter from '../api/auth/routes/recovery.routes';
-import friendRoutes from '../api/livekit/routes/friend.routes';
-import messageRoutes from '../api/livekit/routes/message.routes';
-import roomRoutes from './room.routes';
-import liveKitRoutes from './livekit.routes';
-import notificationRoutes from './notification.routes';
-import userRoutes from './user.routes';
 import { authenticate, authorize } from '../middlewares/auth.middleware';
 import { authLogger } from '../middlewares/logging.middleware';
 import authValidators from '../api/auth/validators/auth.validator';
@@ -65,14 +59,6 @@ authRouter.use(authLogger);
 // Регистрация основных групп маршрутов
 router.use('/auth', authRouter);
 router.use('/recovery', recoveryRouter);
-
-// API маршруты, требующие аутентификации
-router.use('/friends', friendRoutes);
-router.use('/messages', messageRoutes);
-router.use('/rooms', roomRoutes);
-router.use('/users', userRoutes);
-router.use('/notifications', notificationRoutes);
-router.use('/livekit', liveKitRoutes);
 
 // Административные маршруты
 const adminRouter = Router();
@@ -181,5 +167,6 @@ router.get('/info', (req, res) => {
     }
   });
 });
+
 
 export default router;
